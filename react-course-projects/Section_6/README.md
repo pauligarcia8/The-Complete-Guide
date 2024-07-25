@@ -141,3 +141,11 @@ export default function CustomInput({label, invalid, ...props}) { // export a cu
     )
 }
 ~~~
+
+### Tailwind CSS
+Tailwind CSS is a CSS framework that can be used in any web project. It's not focused on React or anything like that, but it works really well with React. Tailwind is all about adding tiny utility CSS classes to apply styles step by step
+and therefore then style the overall component. 
+In addition, Tailwind also sets up some base styles that will affect the overall document, but the main idea behind Tailwind really is to add these tiny utility classes.  `"w-24 h-24 rounded-full mx-auto"` 
+
+- Advantages: no need to know CSS, rapid development, no style clashes between components since are inline syles, highly configurable & extensible
+- Disadvanges: relatively long className values, any style changes require editing JSX and you end up with many relatively small "wrapper" components OR lots of copy and pasting
