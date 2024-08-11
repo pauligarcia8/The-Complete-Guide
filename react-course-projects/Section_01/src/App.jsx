@@ -1,6 +1,5 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import "./App.css";
+import "./styles.css";
 
 const content = [
   [
@@ -34,8 +33,7 @@ export default function App() {
   return (
     <div>
       <header>
-        <div ></div>
-        <img src={reactLogo} alt="React logo" />
+        <img src="react-logo-xs.png" alt="React logo" />
         <div>
           <h1>React.js</h1>
           <p>i.e., using the React library for rendering the UI</p>
@@ -61,12 +59,6 @@ export default function App() {
             onClick={() => setActiveContentIndex(2)}
           >
             Related Resources
-          </button>
-          <button
-            className={activeContentIndex === 3 ? "active" : ""}
-            onClick={() => setActiveContentIndex(3)}
-          >
-            Related vs JS
           </button>
         </menu>
         <div id="tab-content">
