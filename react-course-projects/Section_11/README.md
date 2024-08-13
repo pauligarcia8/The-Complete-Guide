@@ -33,4 +33,33 @@ useEffect(() => {
 ### When to use the useEffect cleanup function
 - Fetch requests: When initiating an API request in a component, it is important that we also account for a way to abort the request when the component is unmounted or re-rendered.
 - Timeouts: For timeouts, you can use the setTimeout(callback, timeInMs) timer function in the useEffect hook, followed by the clearTimeout(timerId) function in the cleanup function. This guarantees that the timer is cleared when the component is unmounted.
+~~~
+useEffect(() => {
+    console.log('TIMER SET');
+    const timer = setTimeout(() => {
+      onConfirm();
+    }, TIMER);
+
+    return () => {
+      console.log('Cleaning up timer');
+      clearTimeout(timer);
+    };
+  }, [onConfirm]);
+~~~
 - Intervals: The setInterval(callback, timeInMs) function can be declared in the useEffect hook, and the clearInterval(intervalId) function can be added to the cleanup function to handle intervals. By doing this, you can be sure that the timer will stop when the part is unmounted.
+~~~
+useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('INTERVAL');
+      setRemainingTime((prevTime) => prevTime - 10);
+    }, 10);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+~~~
+
+### useCallback() hook
+We can face an infinite loop when using function as dependecy in useEffect. \
+This built in hook that React offers to us is ideal when we use a function as a dependency of useEffect, this method takes as first argument a function and as second argument a dependecy. Unlike useEffect this hook does return a value, in fact return the function of the first argument
