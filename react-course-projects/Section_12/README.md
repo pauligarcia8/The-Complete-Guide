@@ -178,3 +178,7 @@ if (!shuffledAnswers.current) {
 ~~~
 
 To use only one key to trigger the re render of a component we separate the answer list and the shuffle logic to a new component called Answers, then we create a Question component that renders the QuestionTimer and the Answers components and from the Quiz.jsx component we send the information needed as props and use here the key prop. 
+
+
+### Summary component
+One last component was created in order to show the user how it went on answering the question. Summary component receives a prop that is the array of answer created on Quiz.jsx component, with this information we render the proper values. Also some calculations are madre here to show the percetage of wrong, correct or skiped answers.
