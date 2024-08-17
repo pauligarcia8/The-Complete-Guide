@@ -11,13 +11,14 @@ function App() {
 
   const handleSetCount = (newCount) => {
     setChosenCount(newCount);
+    setChosenCount(prevChoosenCount => prevChoosenCount + 1);
   }
   return (
     <>
       <Header />
       <main>
         <ConfigureCounter onSet={handleSetCount} />
-        <Counter initialCount={chosenCount} />
+        <Counter key={chosenCount} initialCount={chosenCount} />
       </main>
     </>
   );
