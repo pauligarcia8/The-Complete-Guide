@@ -115,4 +115,24 @@ export async function updateUserPlacer(places) { // places is an object that has
 }
 ~~~
 
-### Deleting data vis DELETE http request
+### Deleting data via DELETE http request
+
+We just do the same as we did with the post method but using the filter method to remove the element desire
+~~~
+const handleRemovePlace = useCallback(async function handleRemovePlace() {
+    setUserPlaces((prevPickedPlaces) =>
+      prevPickedPlaces.filter((place) => place.id !== selectedPlace.current.id)
+    );
+
+    try {
+      await updateUserPlaces(
+        userPlaces.filter((place) => place.id !== selectedPlace.current.id)
+      );
+    } catch (error) {
+      setUserPlaces(userPlaces);
+      setErrorUpdatingPlaces({message: error.message || 'Failed to delete place.'})
+    }
+
+    setModalIsOpen(false);
+  }, [userPlaces]);
+~~~
