@@ -139,7 +139,7 @@ const emailIsInvalid = enteredValues.email !== '' && !enteredValues.email.includ
 <div className="control-error">{emailIsInvalid && <p>Please enter a valid email adress</p>}</div>
 ~~~
 
-### Validating Input upon Lost Focus
+### Validating Input upon Lost Focus via State
 Another way of validating is using the onBlur prop in the input tag. Focus refers to click in and out of an input field. We need to handle the blur prop in order to listen the onFocus event. We do it by setting a state and creating a handleBlur function that manage the previous state of an input (via idetifier), update it to the opposite value and use the current state to validation.
 ~~~
 const [didEdit, setIsEdit] = useState({
@@ -187,4 +187,126 @@ function handleInputBlur(identifier) { // set to true the isEdit state
         [identifier]: true
     }))
 }
+~~~
+
+### Validating input upon form submission
+When using refs we cannot validate on every keystroke. We would have to set up separate event listeners for that. And if we would do that, we could also just start managing the input values via state. So if we wanna stick to refs, we can basically only validate the input when the user submits the form. This is how we do it:
+~~~
+const [emailIsInvalid, setEmailIsInvalid] = useState(false);
+
+  const email = useRef();
+  const password = useRef();
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const enteredEmail = email.current.value;
+    const enteredPassword = password.current.value;
+
+    const emailIsValid = !enteredEmail.includes('@');
+
+    if (!emailIsValid) {
+      setEmailIsInvalid(true);
+      return;
+    }
+
+    setEmailIsInvalid(false);
+
+    console.log('Sending HTTP request...')
+
+  }
+~~~
+
+### Creating a custom component to be reusable
+It is important to viasualize when to create a custom component in order to reduce repetitive code. We create an Input component that is reconfigurable and can be reused changing the prop values. 
+**Input.jsx**
+~~~
+export default function Input({ label, id, error, ...props}) {
+    return (
+        <div className="control no-margin">
+          <label htmlFor={id}>{label}</label>
+          <input 
+            id={id} 
+            {...props}
+          />
+          <div className="control-error">{error && <p>{error}</p>}</div>
+        </div>
+    )
+}
+~~~
+**StateLogin.jsx**
+~~~
+<div className="control-row">
+    <Input 
+        label="Email"  
+        id="email" 
+        type="email" 
+        name="email" 
+        onBlur={() => handleInputBlur('email')}
+        onChange={(event) => handleInputChange('email', event.target.value)}
+        value={enteredValues.email}
+        error={emailIsInvalid && 'Please enter a valid email'}
+    />
+
+    <Input 
+        label="Password"  
+        id="password" 
+        type="password" 
+        name="password" 
+        onBlur={() => handleInputBlur('password')}
+        onChange={(event) => handleInputChange('password', event.target.value)}
+        value={enteredValues.password}
+        error={passwrodIsInvalid && 'Please enter a valid password'}
+    />
+</div>
+~~~
+### Validation Logic
+Is a good practice to have a file where all the validations are made, so they can be reused where needed. 
+
+### Custom hook 
+We can create a custom hook that manage the validation and different values of the inputs. Before we had the validation and the useState on the same component that rendered the inputs. Now with the custom hook **useInput** we get the value and validate each input independently and with a much more cleaner code in the component itself. 
+**useInput.js**
+This custom hook receives a default value that depends on the change of the input that is calling and returs an object with value, the handlers and the error if exists.
+~~~
+import { useState } from "react"
+
+export function useInput(defaultValue, validationFn) {
+    const [enteredValue, setEnteredValue] = useState(defaultValue) 
+    const [didEdit, setIsEdit] = useState(false)
+
+    const valueIsValid = validationFn(enteredValue);
+
+    function handleInputChange(event) {
+        setEnteredValue(event.target.value);
+        setIsEdit(true)
+      }
+    
+    function handleInputBlur() {
+        setIsEdit(true)
+    }
+
+    return {
+        value: enteredValue,
+        handleInputBlur,
+        handleInputChange,
+        hasError: didEdit && !valueIsValid
+    }
+}
+~~~
+Then we can use this custom hooks for email and password independly a destructured the returns values to use it on the ui
+**StateLogin.jsx**
+~~~
+const { 
+    value: emailValue, 
+    handleInputChange: handleEmailChange, 
+    handleInputBlur: handleEmailBlur,
+    hasError: emailHasError 
+  } = useInput('', isEmail(value) && isNotEmpty(value));
+
+const { 
+    value: passwordValue,
+    handleInputChange: handlePasswordChange,
+    handleInputBlur: handlePasswordBlur,
+    hasError: passwordHasError 
+} = useInput('', (value) => hasMinLength(value, 6));
 ~~~
