@@ -7,8 +7,11 @@
 By default the browser sends hettp request, son when a button inside of a form is clicked will generate a request and send those request to the server that is serving the site. So if we have a button without a type that type is going to be submit by default, if we don't want to trigger that http request we need to set the type to button `type='button'`. Or we can do this by not changing the type on the button element and adding the onSubmit prop to the form element and this way when any button inside the form is clicked the form is going to trigger a submit event that we can listen with a handleSubmit(event) function, and there call the preventDefault() that prevents that default htpp request action.
 
 ### Managing & getting user input via state & generic handlers
-We can handle input change doing different handlers for the different inputs, and managing state for those independently, or we can just use one piece of state with an object, and use one handler function to manage there different inputs. This would be achived doing the following
-**Instead of doing this: **
+
+We can handle input change doing different handlers for the different inputs, and managing state for those independently, or we can just use one piece of state with an object, and use one handler function to manage there different inputs. This would be achived doing the following.
+
+**Instead of doing this:**
+
 ~~~
 const [email, setEmail] = useState('')
 const [password, setPassword] = useState('')
@@ -45,7 +48,11 @@ function handleSubmit(event) { // this is set to the onSubmit prop of the form t
     value={password}
 /
 ~~~
-**Do this: **
+
+
+**Do this:**
+
+
 ~~~
 const [enteredValues, setEnteredValues] = useState({
     email: '',
@@ -293,7 +300,9 @@ export function useInput(defaultValue, validationFn) {
     }
 }
 ~~~
-Then we can use this custom hooks for email and password independly a destructured the returns values to use it on the ui
+
+Then we can use this custom hooks for email and password independly a destructured the returns values to use it on the ui. \
+
 **StateLogin.jsx**
 ~~~
 const { 
