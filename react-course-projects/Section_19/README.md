@@ -1,266 +1,246 @@
-# Section 19: Diving into Redux (an alternative of context API)
-### What is Redux?
-Is a state management system for cross-component or app-wide state.
-It helps us manage state, data that changes and affects our application and what we display on the screen. It helps us manage such data across multiple components or even the complete app.
-Different types of state:
-- Local State: state belongs to a single component. Example: listening to user input on an input field or toggling a "show more details" field. **Should be managed inside the component via useState() / useReducer()**
-- Cross-component State: staate affecting multiple components. Example: open / closed state of a modal overlay. **Should be managed inside the component via useState() / useReducer(), required "prop drilling"**
-- App-wide State: state affecting the entire app. Example: use authentication status or chose theme. **Requires prop drilling or React Context or Redux**
+# Section 18: practice project. Building a food order app
 
-### Disadvatages of React Context
-- Complex setup & managment: in more complex apps, using React Context can lead to deeply nested or "fat context provide" components
-- Performance: React Context is not optimized for high-frequency state changes
+## App Description
+A food order application that shows a list of different food options with its price, description and a button to add to the cart. In the header apart from the title a cart button is shown with the items selected by the user. If the cart button is clicked a modal appears showing a list of food selected with 2 buttons, one for drecreasing the amount of the food and the other to increase it. The total value is updated when this buttons are clicked to give the user a better experience. 
+This modal has aswell two buttons, one to close the modal and go back to first screen of the app and the other (checkout button) to order the food selected. 
+The checkout button lead the user to another modal with a form with required fields and 2 buttons, one to go back to first screen an other to submit the order. 
+If the submition is done correctly a succes message will appear with a button that lead the user to first screen and the cart button on the header is reset at 0. 
 
-### How Redux Work
-***Redux is all about having one Central Data (state) Store, in your application.***
-1. You have exactly ONE store for all your state for yout entire application. Here you could have authentication, theming, user input state, etc.
-2. Components uses the data in the sotre via subscritions. Whenever the data changes, the store notifies components, and then components can get the data they need. **Components NEVER directly manipulate the store data**
-3. Components triggers or **dispatch ACTIONS**. An action is just a simple JavaScript object, wich describes the kind of operation, the reducer should perform.
-4. Redux forwards actions to the reducer, reads that description of the desired operation, and then this operation is performed by the reducer. 
-5. For mutate or update the data we use a **Reducer Function** wich takes some input, and then transfor that input, they reduce it and show the new value.
-
-![How redux work](public/how_redux_work.png)
-
-### Creating our Central Data Store
-
-We create a file that will be handling the state, importing the createStore method and setting it returned value to a constant called store, then we create a reducer function that is going to be managing the different actions.  
+## Technical information
+The **app.jsx** component is the responsible of rendering all the components of this app. This is it structure:
 ~~~
-import { createStore }  from 'redux';
-
-const counterReducer = (state = { counter: 0 }, action) => {
-    if (action.type === 'increment') {
-        return {
-            counter: state.counter + 1
-        }
-    }
-
-    if (action.type === 'decrement') {
-        return {
-            counter: state.counter - 1
-        }
-    }
-    return state;
+function App() {
+  return (
+    <UserProgressContextProvider>
+      <CartContextProvider>
+        <Header />
+        <Meals />
+        <Cart />
+        <Checkout />
+      </CartContextProvider>
+    </UserProgressContextProvider>
+  );
 }
-
-const store = createStore(counterReducer);
-
-export default store;
-~~~
-At the top level of the App we wrap the app with the Provider component from 'react-redux' and pass as a value our exported store previously created.
-~~~
-import { Provider } from 'react-redux';
-import store from './store/index.js';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<Provider store={store}><App /></Provider>);
 ~~~
 
-### Using Redux data in components and dispatching action to mutate the state
-There is a redux the useSelector() hook that allow us to get the piece of state we need, using this hook React Redux will automatically set up a subscription to the Redux store for this component. So your component will be updated and will receive the latest counter automatically whenever that data changes in the Redux store. So it's an automatically reactive and changes to the Redux store will cause this component function to be re executed.
-With the help of useDispatch() we can trigger an action by passing the type property with the value we need to triger certain actioN:
+### Meals
+The **meals.jsx** component renders a list of different food options. This is managed by a custom hook (useHttp.js) that makes the http request to fetch the meals in order to show them to the user. 
+
+### Cart and cartItems
+The **cart.jsx** component shows a modal to the user with the items (**cartItems.jsx**) selected. This component use 2 contexts (CartContext and UserProgressContext) and has 2 functions handleCloseCart() that calls the hideCart method of the userProgressContex and handleGoToCheckout() that calls the showCheckout() method also of the userProgressContex.
+
+### Checkout 
+The **checkout.jsx** component shows a modal with a form in order to submit the order. This component use 2 contexts (CartContext and UserProgressContext) and has 3 functions handleClose() that uses the hideCheckout() method of the userProgressContext, handleFinish() uses the clearCart() method of the userProgressContext and the clearData() destructed of the useHttp() custom hook, and handleSubmit() function calls the sendRequest() function also destructed of the useHttp() custom hook. 
+
+## Contexts
+### **CartContext.jsx**
+
+The context has a default value as follows:
 ~~~
-import { useSelector, useDispatch } from 'react-redux';
-import classes from './Counter.module.css';
+import { createContext, useReducer } from 'react';
 
-const Counter = () => {
-  const dispatch = useDispatch();
-  const counter = useSelector(state => state.counter);
+const CartContext = createContext({
+  items: [], // the meals selected
+  addItem: (item) => {}, // a method with an item to be added to the items array
+  removeItem: (id) => {}, // a method with an id to remove an item from the items array
+  clearCart: () => {}, // a method to set to 0 the cart
+});
 
-  const incrementHandler = () => {
-    dispatch({ type: 'increment'}) // dispatching the increment action
+export default CartContext; // to be use outside of the current file
+~~~
+
+***The context provider*** is constructed with the useReducer hook that accept a dispatch function as first parameter and as a second parameter we pass the initial state value ( { items: [] } ). We destructure from useReducter a cart containing as first value { items: [] } and a dispatchAction that will be calling our cartReducer function. 
+The provider has different functions that triggers via type different dispatch actions. 
+~~~
+export function CartContextProvider({ children }) {
+  const [cart, dispatchCartAction] = useReducer(cartReducer, { items: [] });
+
+  function addItem(item) {
+    dispatchCartAction({ type: 'ADD_ITEM', item });
   }
 
-  const decrementHandler = () => {
-    dispatch({ type: 'decrement'}) // dispatching the decrement action
+  function removeItem(id) {
+    dispatchCartAction({ type: 'REMOVE_ITEM', id });
   }
 
-  const toggleCounterHandler = () => {};
+  function clearCart() {
+    dispatchCartAction({ type: 'CLEAR_CART' });
+  }
+
+  const cartContext = {
+    items: cart.items,
+    addItem,
+    removeItem,
+    clearCart
+  };
 
   return (
-    <main className={classes.counter}>
-      <h1>Redux Counter</h1>
-      <div className={classes.value}>{counter}</div> // using the state value
-      <div>
-        <button onClick={incrementHandler}>Increment</button> // onClick listener, triggers dispatch 
-        <button onClick={decrementHandler}>Decrement</button> // onClick listener, triggers dispatch 
-      </div>
-      <button onClick={toggleCounterHandler}>Toggle Counter</button>
-    </main>
+    <CartContext.Provider value={cartContext}>{children}</CartContext.Provider>
   );
-};
-
-export default Counter;
-~~~
-
-### Attaching payloads to actions
-The action received in the reducer function doesn't have only a type property, it has also a payload property (that name can be set by us) that allow us to pass a value to the dispatch action.
-**Counter.js** 
-~~~
-const increaseHandler = () => {
-    dispatch({ type: 'increase', amount: 5 })
-}
-~~~
-**index.js** - Store
-~~~
-if (action.type === 'increase') {
-    return {
-        counter: state.counter + action.amount
-    }
 }
 ~~~
 
-If we want to add another piece of state to our store we jsut need to add it like this: 
+***The cartReducer function***
+Receives a state and an action, with this values will be handling the methods addItem, removeItem and clearData returning each of them the state spreaded and the updated items array.
 ~~~
-import { createStore } from "redux";
+function cartReducer(state, action) {
+  if (action.type === 'ADD_ITEM') {
+    const existingCartItemIndex = state.items.findIndex(
+      (item) => item.id === action.item.id
+    );
 
-const initialState = { counter: 0, showCounter: true }; // we have two different states
+    const updatedItems = [...state.items];
 
-const counterReducer = (state = initialState, action) => {
-  if (action.type === "increment") {
-    return {
-      counter: state.counter + 1, // using the first piece of state
-      showCounter: state.showCounter // need to add or will be override
-    };
-  }
-
-  if (action.type === "increase") {
-    // ...
-  }
-
-  if (action.type === "decrement") {
-    // ...
-  }
-
-  if (action.type === "toggle") {
-    return {
-        showCounter: !state.showCounter, // using the second piece of state
-        counter: state.counter // need to add or will be override
+    if (existingCartItemIndex > -1) {
+      const existingItem = state.items[existingCartItemIndex];
+      const updatedItem = {
+        ...existingItem,
+        quantity: existingItem.quantity + 1,
+      };
+      updatedItems[existingCartItemIndex] = updatedItem;
+    } else {
+      updatedItems.push({ ...action.item, quantity: 1 });
     }
+
+    return { ...state, items: updatedItems };
   }
-  
+
+  if (action.type === 'REMOVE_ITEM') {
+    const existingCartItemIndex = state.items.findIndex(
+      (item) => item.id === action.id
+    );
+    const existingCartItem = state.items[existingCartItemIndex];
+
+    const updatedItems = [...state.items];
+
+    if (existingCartItem.quantity === 1) {
+      updatedItems.splice(existingCartItemIndex, 1);
+    } else {
+      const updatedItem = {
+        ...existingCartItem,
+        quantity: existingCartItem.quantity - 1,
+      };
+      updatedItems[existingCartItemIndex] = updatedItem;
+    }
+
+    return { ...state, items: updatedItems };
+  }
+
+  if (action.type === 'CLEAR_CART') {
+    return { ...state, items: [] };
+  }
+
   return state;
-};
+}
+~~~
+### **UserProgressContext.jsx**
+The idea of this context is to set 'cart' or 'checkout' flags in order to use them for showing or hiding the cart or the checkout modal. 
+~~~
+import { createContext, useState } from 'react';
 
-const store = createStore(counterReducer);
+const UserProgressContext = createContext({
+  progress: '', // 'cart', 'checkout'
+  showCart: () => {},
+  hideCart: () => {},
+  showCheckout: () => {},
+  hideCheckout: () => {},
+});
 
-export default store;
+export function UserProgressContextProvider({ children }) {
+  const [userProgress, setUserProgress] = useState('');
+
+  function showCart() {
+    setUserProgress('cart');
+  }
+
+  function hideCart() {
+    setUserProgress('');
+  }
+
+  function showCheckout() {
+    setUserProgress('checkout');
+  }
+
+  function hideCheckout() {
+    setUserProgress('');
+  }
+
+  const userProgressCtx = {
+    progress: userProgress,
+    showCart,
+    hideCart,
+    showCheckout,
+    hideCheckout,
+  };
+
+  return (
+    <UserProgressContext.Provider value={userProgressCtx}>
+      {children}
+    </UserProgressContext.Provider>
+  );
+}
+
+export default UserProgressContext;
 ~~~
 
-> you must never mutate state the original state which you're getting. `state.counter++` This can lead to bugs, unpredictable behavior and it can make debugging your application harder as well. **Always return a brand new object where you copy any nested objects or erase.** Like this: 
+## Custom Hook
+### **useHttp.jsx**
+First we create a helper function to deal with sending requests that accepts url and config as parameters.
 ~~~
-return {
-    counter: state.counter + 1,
-    showCounter: state.showCounter
-};
-~~~ 
+async function sendHttpRequest(url, config) {
+  const response = await fetch(url, config);
 
-### Redux Toolkit
-With the help od useSlice() we can prepare a slice of our global state. For example when we have different pieces of state which are not directly related, let's say an authentication status and the counter status, we could create different slices potentially also in different files to make our code maintainable.
-The slice created is an object with a name property, an initial state and a reducers property that holds different methods wich receives the current state. This methos will automatically be called by us depending on wich action was triggered, so we don't need to write our own if checks anymore. In this method **we are allow to mutate the state** because when using Redux toolkit and its functions like create slice, we can't accidentally manipulate the existing state. Because Redux toolkit internally uses another package, called imgur, which will detect code like this and which will automatically clone the existing state, create a new state object, keep all the state which we're not editing, and override the state which we are editing in an immutable way.
+  const resData = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      resData.message || 'Something went wrong, failed to send request.'
+    );
+  }
+
+  return resData;
+}
 ~~~
-import { createSlice } from "@reduxjs/toolkit";
+Then on our custom hook **useHttp.js** we handle data, loading and error via state. We create a function to clear the data and also we create a constand that holds the returning value of an async function called sendRequest. \\
+The sendRequest() sets the data, isLoading and error state with the value returned by sendHttpRequest helper function in a try-catch block because we are sending an http request, that means it may fail. \\
+useEffect() is used to call sendRequest an as a dependecy has sendRequest because it is created outside of the request function and config is also a dependency, and as we don't want to end in an infinit loop we wrap the sendRequest function in useCallback() hook. \\
+On the useEffect we need to add a validation in order to send the request, this validation is true if there are a config object received and if config.method === 'GET' or if !config.method.
+~~~
+export default function useHttp(url, config, initialData) {
+  const [data, setData] = useState(initialData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
 
-const initialState = { counter: 0, showCounter: true };
+  function clearData() {
+    setData(initialData);
+  }
 
-createSlice({
-    name: 'counter',
-    initialState: initialState, 
-    reducers: {
-        increment(state) {
-            state.counter++
-        },
-        decrement(state) {
-            state.counter--
-        },
-        increase(state, action) {
-            state.counter = state.counter + action.amount
-        },
-        toggleCounter(state) {
-            state.showCounter = !state.showCounter
-        }
+  const sendRequest = useCallback(
+    async function sendRequest(data) {
+      setIsLoading(true);
+      try {
+        const resData = await sendHttpRequest(url, { ...config, body: data });
+        setData(resData);
+      } catch (error) {
+        setError(error.message || 'Something went wrong!');
+      }
+      setIsLoading(false);
+    },
+    [url, config]
+  );
+
+  useEffect(() => {
+    if ((config && (config.method === 'GET' || !config.method)) || !config) {
+      sendRequest();
     }
-});
-~~~
+  }, [sendRequest, config]);
 
-### Using the store
-~~~
-const counterSlice = createSlice({
-    ...
-})
-
-const store = configureStore({
-    reducer: counterSlice.reducer
-});
-export default store;
-~~~
-
-### How to use the different methods on the components
-We can asing the methods (actions) created with counterSlice on a constant and use them on the components like this `export const counterActions = counterSlice.actions;`. Actions has a default payload prop to access any value we need. 
-To use them in a compent we do the following:
-~~~
-const incrementHandler = () => {
-    dispatch(counterActions.increment())
+  return {
+    data,
+    isLoading,
+    error,
+    sendRequest,
+    clearData
+  };
 }
-
-const increaseHandler = () => {
-    dispatch(counterActions.increase(5))
-}
-
-const decrementHandler = () => {
-    dispatch(counterActions.decrement())
-}
-
-const toggleCounterHandler = () => {
-    dispatch(counterActions.toggleCounter())
-};
-~~~
-
-### Adding a new state to the store
-When we need to add another functionalities we need to create another slice, in order to concerns be apart. In this case we create a new slice for the authentication state:
-~~~
-const initialAuthState = {
-    isAuthenticated: false
-}
-
-const authSlice = createSlice({
-    name: 'authentication',
-    initialState: initialAuthState,
-    reducers: {
-        login(state) {
-            state.isAuthenticated = true
-        },
-        logout(state) {
-            state.isAuthenticated = false
-        }
-    }
-})
-~~~
-As we have one and only one store we export them in an object with key values pointing to the differents slices. 
-
-Changing this:
-~~~
-const store = configureStore({
-    reducer: counterSlice.reducer
-});
-
-export const counterActions = counterSlice.actions;
-export default store;
-~~~
-
-To this:
-~~~
-const store = configureStore({
-    reducer: { counter: counterSlice.reducer, auth: authSlice.reducer }
-});
-
-export const counterActions = counterSlice.actions;
-export const authActions = authSlice.actions;
-
-export default store;
-~~~
-
-Then to use this slices we need to use point notation. 
-~~~
-const counter = useSelector(state => state.counter.counter);
-const show = useSelector(state => state.counter.showCounter);
 ~~~

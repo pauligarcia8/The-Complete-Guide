@@ -1,34 +1,96 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import HomePage from "./pages/Home";
-import Products from "./pages/Products";
-import RootLayout from "./pages/Root";
-import ErrorPage from "./pages/Error";
-import ProductDetailPage from "./pages/ProductDetail";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import Cart from "./components/Cart/Cart";
+import Layout from "./components/Layout/Layout";
+import Products from "./components/Shop/Products";
+// import { uiActions } from "./store/ui-slice";
+import Notification from "./components/UI/Notification";
+import { fetchCartData, sendCartData } from "./store/cart-actions";
 
-// const routeDefinitions = createRoutesFromElements(
-//   <Route>
-//     <Route path='/' element={<HomePage />}/>
-//     <Route path='/products' element={<Products />}/>
-//   </Route>
-// );
-
-// const router = createBrowserRouter(routeDefinitions);
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <ErrorPage />,
-    children: [
-      { path: "", element: <HomePage /> },
-      { path: "products", element: <Products /> },
-      { path: "products/:productId", element: <ProductDetailPage /> },
-    ],
-  },
-]);
+let isInitial = true;
 
 function App() {
-  return <RouterProvider router={router} />;
+  const dispatch = useDispatch();
+  const showCart = useSelector((state) => state.ui.cartIsVisible);
+  const cart = useSelector((state) => state.cart);
+  const notification = useSelector((state) => state.ui.notification);
+
+  // useEffect(() => {
+  //   const sendCartData = async () => {
+  //     dispatch(
+  //       uiActions.showNotification({
+  //         status: "pending",
+  //         title: "Sending...",
+  //         message: "Sending cart data!",
+  //       })
+  //     );
+  //     const response = await fetch(
+  //       "https://mybackend-23b5d-default-rtdb.firebaseio.com/cart.json",
+  //       {
+  //         method: "PUT",
+  //         body: JSON.stringify(cart),
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error("");
+  //     }
+
+  //     dispatch(
+  //       uiActions.showNotification({
+  //         status: "success",
+  //         title: "Success",
+  //         message: "Sent cart data succesfully!",
+  //       })
+  //     );
+  //   };
+
+  //   if (isInitial) {
+  //     isInitial = false;
+  //     return;
+  //   }
+
+  //   sendCartData().catch((error) => {
+  //     dispatch(
+  //       uiActions.showNotification({
+  //         status: "error",
+  //         title: "Error...",
+  //         message: "Sending cart data failed!",
+  //       })
+  //     );
+  //   });
+  // }, [cart, dispatch]);
+  useEffect(() => {
+   dispatch(fetchCartData())
+ }, [dispatch]);
+
+  useEffect(() => {
+     if (isInitial) {
+      isInitial = false;
+      return;
+    }
+
+    if (cart.changed) {
+      dispatch(sendCartData(cart))
+    }
+  }, [cart, dispatch]);
+
+
+  return (
+    <>
+      {notification && (
+        <Notification
+          status={notification.status}
+          title={notification.title}
+          message={notification.message}
+        />
+      )}
+      <Layout>
+        {showCart && <Cart />}
+        <Products />
+      </Layout>
+    </>
+  );
 }
 
 export default App;
