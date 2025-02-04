@@ -1,221 +1,126 @@
-# Section 21: Building a SPA with react router
+# Section 21: Advanced Redux
 
-### What is Routing?
-Routing is when different url path loads different content on the screen. 
-Traditionally, we would implement Routing by simply loading different content, different HTML files for different paths, and that is how you would build a multi-page application which you typically would build without ReactJS. With that, we get different content for different paths, but the disadvantage is that we always have to fetch new content. 
-A new HTTP request is sent and a new response is received, and that can kind of break the user flow. 
-That's why wen need to use a Single Page Application, because we send only one initial HTML request and then this HTML file with a bunch of extra JavaScript is downloaded, and thereafter the extra JavaScript code
-that runs on the client will actually take care about adjusting what the user sees on the screen. That's how single page applications work.
-So instead of loading new HTML files from the backend, we could add some client-side code that simply watches the URL and then loads a different React component when that URL changes. 
-With that, we're still in a single page application but we nonetheless support different URLs and therefore Routing.
+> Reducers must be pure, side-effect free, synchronous functions!
 
-### createBrowserRouter
-This is a function provided by this package which allows us to define our routes that we wanna support in this application. 
-This is how we define differents paths, we call this function and to this function, we pass an array of route definition objects. We provide a couple of JavaScript objects where every object represents one route. And we add some properties to define the route characteristics like for example, the path for which this route should be activated and an element that is the component that needs to be render.
+### **INPUT** (old state + action) ==> **OUTPUT** (new state)
+
+### Side-effect & async tasks should be executed inside the components ( via useEffect ) or inside the action creators
+
+### Where should out logic (code) go?
+When we consider where to put our logic, our code then we have to differentiate between synchronous, side-effect free code and code with side effects or codes that is asynchronous.  
+So if we basically just have some data transformation then we typically **should prefer reducers.** \
+For asynchronous code or code with side effects. There you should prefer action creators or components and you absolutely must never use reducers.
+
+**App.js**
 ~~~
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import HomePage from './pages/Home';
-import Products from './pages/Products';
+  useEffect(() => {
+    const sendCartData = async () => {
+      dispatch(
+        uiActions.showNotification({
+          status: "pending",
+          title: "Sending...",
+          message: "Sending cart data!",
+        })
+      );
+      const response = await fetch(
+        "https://mybackend-23b5d-default-rtdb.firebaseio.com/cart.json",
+        {
+          method: "PUT",
+          body: JSON.stringify(cart),
+        }
+      );
 
-const router = createBrowserRouter([
-  { path: '/', element: <HomePage />},
-  { path: '/products', element: <Products />},
+      if (!response.ok) {
+        throw new Error("");
+      }
 
-])
+      dispatch(
+        uiActions.showNotification({
+          status: "success",
+          title: "Success",
+          message: "Sent cart data succesfully!",
+        })
+      );
+    };
 
-function App() {
-  return <RouterProvider router={router}/>;
+    if (isInitial) {
+      isInitial = false;
+      return;
+    }
+
+    sendCartData().catch((error) => {
+      dispatch(
+        uiActions.showNotification({
+          status: "error",
+          title: "Error...",
+          message: "Sending cart data failed!",
+        })
+      );
+    });
+  }, [cart, dispatch]);
+~~~
+
+### What is a Thunk??
+A thunk is simply a function, that delays an action until later, until something else finished. And we could write an action creator as a thunk, to write an action creator, which does not immediately return the action object, but which instead, returns another function which eventually returns the action.
+
+Instead of the previous code, we write out asunc logic in an action creator
+**cart-actions.js**
+~~~
+export const sendCartData = (cart) => {
+  return async (dispatch) => {
+    dispatch(
+      uiActions.showNotification({
+        status: "pending",
+        title: "Sending...",
+        message: "Sending cart data!",
+      })
+    );
+
+    const sendRequest = async () => {
+      const response = await fetch(
+        "https://mybackend-23b5d-default-rtdb.firebaseio.com/cart.json",
+        {
+          method: "PUT",
+          body: JSON.stringify(cart),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error("Sending cart failed.");
+      }
+    }
+    
+
+    try {
+      await sendRequest();
+      dispatch(
+        uiActions.showNotification({
+          status: "success",
+          title: "Success",
+          message: "Sent cart data succesfully!",
+        })
+      );
+    } catch (error) {
+        dispatch(
+          uiActions.showNotification({
+            status: "error",
+            title: "Error...",
+            message: "Sending cart data failed!",
+          })
+        );
+    }
+
+  }
 }
-
-export default App;
 ~~~
 
-**RouterProvider: receives a prop where we pass the router created with createBrowserRouter**
-
-
-### createRoutesFromElements: Another alternative of defining routes
-If you worked with older versions of react-router-dom, it might also be a bit of a strange approach because in older versions you actually defined all your routes with help of components and JSX code instead
-of JavaScript Objects in array. You can import another function from react-router-dom, and that's the create routes from elements function.
-We can create a new constant call route definitions, for example, and call create routes from elements and to this function, you pass a bunch of JSX code. We import a route component from react-router-dom, and then add our route component to create routs from elements.
-Then we use createBrowserRouter and pass the routes created with createRoutesFromElements.
+Then we use it on App.js
 ~~~
-import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route } from 'react-router-dom';
-import HomePage from './pages/Home';
-import Products from './pages/Products';
-
-const routeDefinitions = createRoutesFromElements(
-  <Route>
-    <Route path='/' element={<HomePage />}/>
-    <Route path='/products' element={<Products />}/>
-  </Route>
-);
-
-const router = createBrowserRouter(routeDefinitions);
-
-function App() {
-  return <RouterProvider router={router}/>;
-}
-
-export default App;
-~~~
-
-### Link component
-It does render an anchor element but it basically listens for clicks on that element, prevents the browser default of sending a HTTP request if the link is clicked, and instead simply takes a look at the route definitions to update the page accordingly and load the appropriate content.
-It will also change the URL but without sending a new HTTP request. 
-
-Instead of this : 
-~~~
-<>
-            <h1>My Home Page</h1>
-            <p>Go to the <a href="/products">the list of products</a></p>
-        
-        </>
-~~~
-
-Do this:
-~~~
-import { Link } from "react-router-dom";
-
-function HomePage() {
-    return (
-        <>
-            <h1>My Home Page</h1>
-            <p>Go to the <Link to="/products">the list of products</Link></p>
-        
-        </>
-    )
-}
-
-export default HomePage;
-~~~
-
-### Nested Routes
-We might want to add a navigation bar at the top, which actually lets us navigate between different pages. We can add some layout that wraps all these routes, and that simply loads these route components inside of this wrapping layout component. 
-***App.js***
-~~~
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    children: [
-      { path: "/", element: <HomePage /> },
-      { path: "/products", element: <Products /> },
-    ],
-  },
-]);
-~~~
-***Root.js***
-The Outlet component from "react-router-dom" renders the children array (prop of createBrowserRouter) and its components.
-~~~
-import { Outlet } from "react-router-dom";
-import MainNavigation from "../components/MainNavigation";
-import classes from './Root.module.css';
-
-function RootLayout() {
-    return (
-        <>
-            <MainNavigation />
-            <main className={classes.content} >
-                <Outlet />
-            </main>
-        </>
-    )
-}
-
-export default RootLayout;
-~~~
-
-### Showing error pages with errorElement
-There is another prop of createBrowserRouter that is errorElement that can help us showing screen with error message for better user experience. We pass the component responsible of showing the message to the prop and that is it:
-~~~
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <ErrorPage />,
-    children: [
-      { path: "/", element: <HomePage /> },
-      { path: "/products", element: <Products /> },
-    ],
-  },
-]);
-~~~
-
-### Using Dynamic Routes
-With the help of semicolon we can create dynamic routes, what comes after the semicolen we can use ir with help of useParams ( another react-router-dom feature) 
-~~~
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <ErrorPage />,
-    children: [
-      { path: "/", element: <HomePage /> },
-      { path: "/products", element: <Products /> },
-      { path: "/products/:productId", element: <ProductDetailPage /> },
-    ],
-  },
-]);
-~~~
-***ProductDetail.js***
-~~~
-import { useParams } from "react-router-dom";
-
-function ProductDetailPage() {
-    const params = useParams();
-
-    return (
-        <>
-            <h1>Product Details!</h1>
-            <p>{params.productId}</p> // (productId) it has to be the same identifier
-        </>
-    )
-}
-
-export default ProductDetailPage;
-~~~
-
-
-And to create dynamic routes with the same Link component we can do the following:
-~~~
-import { Link } from "react-router-dom";
-
-const PRODUCTS = [
-  { id: "p1", title: "Product 1" },
-  { id: "p2", title: "Product 2" },
-  { id: "p3", title: "Product 3" },
-];
-function Products() {
-  return (
-    <>
-      <h1>Products Page</h1>
-      <ul>
-        {PRODUCTS.map((prod) => (
-          <li key={prod.id}>
-            <Link to={`/products/${prod.id}`}>{prod.title}</Link>
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
-export default Products;
-~~~
-
-### Absolute vs Realtive paths
-***Absolute*** paths specify the full path starting from the root of your app. They start with a /.
-
-- Usage: Useful when you want to direct the user to a specific route in your app, regardless of the current location.
-
-- Example: /home, /dashboard, /profile/settings
-
-***Relative*** paths define routes based on the current location. They do not start with a /.
-
-Usage: Relative paths are helpful when you want to build nested or contextual routing within a particular section of your application.
-
-Example: settings, edit, details
-To go to the previous path we use:
-~~~
-    <p><Link to=".." relative="path">Back</Link></p>
+useEffect(() => {
+     if (isInitial) {
+      isInitial = false;
+      return;
+    }
+    dispatch(sendCartData(cart))
+}, [cart, dispatch]);
 ~~~
