@@ -1,4 +1,4 @@
-# Section 21: react-router-dom part 2
+# Section 22: react-router-dom part 2
 
 ### loader
 Each route can define a "loader" function to provide data to the route element before it renders.

@@ -1,4 +1,4 @@
-# Section 20: Advanced Redux
+# Section 21: Advanced Redux
 
 > Reducers must be pure, side-effect free, synchronous functions!
 

@@ -1,4 +1,4 @@
-# Section 18: practice project. Building a food order app
+# Section 19: practice project. Building a food order app
 
 ## App Description
 A food order application that shows a list of different food options with its price, description and a button to add to the cart. In the header apart from the title a cart button is shown with the items selected by the user. If the cart button is clicked a modal appears showing a list of food selected with 2 buttons, one for drecreasing the amount of the food and the other to increase it. The total value is updated when this buttons are clicked to give the user a better experience. 

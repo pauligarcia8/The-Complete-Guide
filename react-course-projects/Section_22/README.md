@@ -1,4 +1,4 @@
-# Section 21: Building a SPA with react router
+# Section 22: Building a SPA with react router
 
 ### What is Routing?
 Routing is when different url path loads different content on the screen. 

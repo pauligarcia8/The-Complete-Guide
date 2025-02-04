@@ -1,4 +1,4 @@
-# Section 19: Diving into Redux (an alternative of context API)
+# Section 20: Diving into Redux (an alternative of context API)
 ### What is Redux?
 Is a state management system for cross-component or app-wide state.
 It helps us manage state, data that changes and affects our application and what we display on the screen. It helps us manage such data across multiple components or even the complete app.

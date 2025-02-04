@@ -1,4 +1,4 @@
-# Section 22: Adding Authentication to React apps
+# Section 23: Adding Authentication to React apps
 
 ### How authentication works in react apps?
 Authentication in the end it means that certain resources, certain backend routes, for example, should be protected and should not be accessible by everyone. 
