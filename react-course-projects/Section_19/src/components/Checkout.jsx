@@ -8,6 +8,7 @@ import Button from './UI/Button.jsx';
 import UserProgressContext from '../store/UserProgressContext.jsx';
 import useHttp from '../hooks/useHttp.js';
 import Error from './Error.jsx';
+import { useActionState } from 'react';
 
 const requestConfig = {
   method: 'POST',
@@ -22,7 +23,7 @@ export default function Checkout() {
 
   const {
     data,
-    isLoading: isSending,
+    // isLoading: isSending, // for onSubmit form prop
     error,
     sendRequest,
     clearData
@@ -43,13 +44,29 @@ export default function Checkout() {
     clearData();
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
+  // function handleSubmit(event) { // utilize with onSubmit form prop
+  //   event.preventDefault();
 
-    const fd = new FormData(event.target);
+  //   const fd = new FormData(event.target);
+  //   const customerData = Object.fromEntries(fd.entries()); // { email: test@example.com }
+
+  //   sendRequest(
+  //     JSON.stringify({
+  //       order: {
+  //         items: cartCtx.items,
+  //         customer: customerData,
+  //       },
+  //     })
+  //   );
+  // }
+
+  async function checkoutAction(prevState, fd) { // action form prop / fd => form data
+    // event.preventDefault(); // for onSubmit
+    // const fd = new FormData(event.target);
+
     const customerData = Object.fromEntries(fd.entries()); // { email: test@example.com }
 
-    sendRequest(
+    await sendRequest(
       JSON.stringify({
         order: {
           items: cartCtx.items,
@@ -58,6 +75,8 @@ export default function Checkout() {
       })
     );
   }
+  
+  const [formState, formAction, isSending] = useActionState(checkoutAction, null); // change pending to isSending in order to match the validation below
 
   let actions = (
     <>
@@ -93,7 +112,8 @@ export default function Checkout() {
 
   return (
     <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleClose}>
-      <form onSubmit={handleSubmit}>
+      {/* <form onSubmit={handleSubmit}> */}
+      <form action={formAction}>
         <h2>Checkout</h2>
         <p>Total Amount: {currencyFormatter.format(cartTotal)}</p>
 
