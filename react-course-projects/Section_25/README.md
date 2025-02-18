@@ -1,0 +1,2 @@
+# Section 25: React Query / Tanstack Query
+Tanstack Query , formerly known as React Query, is a library that help us sending http requests from inside the React app. So it helps coneccting our React frontend to a backend.
